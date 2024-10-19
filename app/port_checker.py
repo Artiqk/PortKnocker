@@ -150,7 +150,7 @@ class MainWindow(QtWidgets.QMainWindow):
             logging.warning("Attempted to add port while a thread is running.")
             return
         
-        port = self.ui.lineEdit.text()
+        port = self.ui.lineEdit.text().strip()
         protocol = self.ui.comboBox.currentText()
 
         try:
