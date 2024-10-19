@@ -70,3 +70,7 @@ This project is licensed under the [MIT License](LICENSE).
 ## Contact
 
 For questions or support, please open an issue in the GitHub repository or contact the author directly.
+
+## Credits
+- **Developer**: Artiqk - Created and maintained this application.
+- **Icon**: Designed by Arthur Minthe
