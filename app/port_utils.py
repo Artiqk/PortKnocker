@@ -5,7 +5,7 @@ import random
 import os
 import logging
 from dotenv import load_dotenv
-from logging_config import setup_logging
+from config.logging_config import setup_logging
 
 load_dotenv()
 

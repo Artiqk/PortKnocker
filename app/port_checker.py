@@ -3,9 +3,9 @@ import psutil
 import threading
 import logging
 from PySide6 import QtWidgets, QtCore
-from window_ui import Ui_MainWindow
-from port_utils import start_server, handle_port_status, trigger_firewall_prompt
-from logging_config import setup_logging
+from app.window_ui import Ui_MainWindow
+from app.port_utils import start_server, handle_port_status, trigger_firewall_prompt
+from config.logging_config import setup_logging
 
 
 class Worker(QtCore.QObject):
