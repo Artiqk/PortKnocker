@@ -2,6 +2,7 @@ import socket
 import psutil
 import threading
 import logging
+import resources
 from PySide6 import QtWidgets, QtCore, QtGui
 from app.window_ui import Ui_MainWindow
 from app.port_utils import start_server, handle_port_status, trigger_firewall_prompt
@@ -70,7 +71,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ports_list = { 'tcp': [], 'udp': [] }
 
         super().__init__()
-        self.setWindowIcon(QtGui.QIcon("icon.ico"))
+        self.setWindowIcon(QtGui.QIcon(":icon.ico"))
         self.setWindowTitle("Port Checker")
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
