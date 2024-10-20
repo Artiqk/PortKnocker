@@ -4,6 +4,7 @@ import threading
 import logging
 import resources
 from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6.QtGui import QShortcut, QKeySequence
 from app.window_ui import Ui_MainWindow
 from app.port_utils import start_server, handle_port_status, trigger_firewall_prompt
 from config.logging_config import setup_logging
@@ -88,6 +89,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.pushButton.clicked.connect(self.add_port)
         self.ui.lineEdit.returnPressed.connect(self.add_port)
         self.ui.pushButton_2.clicked.connect(self.start_port_checking)
+
+        shortcut_f5 = QShortcut(QKeySequence("F5"), self)
+        shortcut_f5.activated.connect(self.start_port_checking)
+
 
         self.ui.tableWidget.setColumnWidth(0, 30)
 
