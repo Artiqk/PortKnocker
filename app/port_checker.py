@@ -70,6 +70,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ports_list = { 'tcp': [], 'udp': [] }
 
         super().__init__()
+        self.setWindowIcon(QtGui.QIcon("../icon.ico"))
+        self.setWindowTitle("Port Checker")
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
@@ -258,7 +260,6 @@ if __name__ == "__main__":
         app.setStyle("Fusion")
 
         window = MainWindow()
-        window.setWindowIcon(QtGui.QIcon("icon.ico"))
         window.show()
         window.ui.lineEdit.setFocus()
         
