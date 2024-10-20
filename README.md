@@ -48,10 +48,17 @@ python -m app.port_checker
 
 ## Usage
 
-1. **Adding Ports**: Enter a port number in the input field and select the protocol (TCP/UDP). Click the "Add Port" button or press Enter to add the port to the list.
-2. **Checking Ports**: Select your local IP address and click on START to start checking the status of the added ports.
-3. **Viewing Results**: The application will display the status of each port (open/closed) in the table.
-4. **Removing Ports**: Click the trash can icon next to a port entry to remove it from the list.
+### Main Features
+
+- **Add Ports**: Enter the port number and select the protocol (TCP/UDP) to add a port to the list. Then click on "Add Port" button on press **Enter**.
+- **Start Port Checking**: Click the "Start" button or press **F5** to begin checking the status of the ports in the list.
+- **Remove Ports**: Select a port from the table and click the 🗑️ button to delete it from the list.
+- **View Results**: The application will display the results of the port checks in the table.
+
+### Keyboard Shortcuts
+
+- **Return** Add port to the list.
+- **F5**: Start checking the ports.
 
 ## Contributing
 
@@ -72,5 +79,6 @@ This project is licensed under the [MIT License](LICENSE).
 For questions or support, please open an issue in the GitHub repository or contact the author directly.
 
 ## Credits
+
 - **Developer**: Artiqk - Created and maintained this application.
 - **Icon**: Designed by Arthur Minthe
