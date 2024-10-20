@@ -70,7 +70,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ports_list = { 'tcp': [], 'udp': [] }
 
         super().__init__()
-        self.setWindowIcon(QtGui.QIcon("../icon.ico"))
+        self.setWindowIcon(QtGui.QIcon("icon.ico"))
         self.setWindowTitle("Port Checker")
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

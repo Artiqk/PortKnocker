@@ -43,7 +43,7 @@ pip install -r requirements.txt
 3. Run the application:
 
 ```bash
-python -m app.port_checker.py
+python -m app.port_checker
 ```
 
 ## Usage
