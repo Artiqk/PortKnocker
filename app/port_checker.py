@@ -2,7 +2,7 @@ import socket
 import psutil
 import threading
 import logging
-import resources
+import resources.resources as resources
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtGui import QShortcut, QKeySequence
 from app.window_ui import Ui_MainWindow
@@ -86,6 +86,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.comboBox.activated.connect(self.keep_focus)
         self.ui.comboBox_2.activated.connect(self.keep_focus)
 
+        # FIXME: WARNING - Maximum allowed port in the table reached (False). ????
         self.ui.pushButton.clicked.connect(self.add_port)
         self.ui.lineEdit.returnPressed.connect(self.add_port)
         self.ui.pushButton_2.clicked.connect(self.start_port_checking)
@@ -129,6 +130,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tableWidget.setItem(row_position, 2, protocol_item)
         self.ui.tableWidget.setItem(row_position, 3, QtWidgets.QTableWidgetItem("Pending"))
 
+        # TODO: Add button to remove all ports
         remove_button = QtWidgets.QPushButton("🗑️")
         remove_button.setStyleSheet("""
             QPushButton {
@@ -153,19 +155,28 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.insert_port_row(protocol.upper(), port)
 
 
-    def add_port_to_table(self, protocol, port):
-        try:
-            port = int(port)
-            self.ports_list[protocol].append(port)
-            self.insert_port_row(protocol.upper(), port)
-            self.ui.lineEdit.clear()
-            logging.info(f"Added port {port} for protocol {protocol.upper()}.")
-        except Exception as e:
-            logging.error(f"Error adding port: {e}")
-        finally:
-            self.keep_focus()
+    def add_port(self, max_allowed_port=128):
+        if self.thread and self.thread.isRunning():
+            logging.warning("Attempted to add port while a thread is running.")
+            return
+        
+        total_port = sum(len(self.ports_list[protocol]) for protocol in self.ports_list.keys())
 
+        if total_port >= max_allowed_port:
+            logging.warning(f"Maximum allowed port in the table reached ({max_allowed_port}).")
+            return
+        
+        port = self.ui.lineEdit.text().strip()
+        protocol = self.ui.comboBox.currentText().lower()
 
+        if self.is_port_range_and_valid(port):
+            port_range = port.split('-')
+            start, end = int(port_range[0]), int(port_range[1])
+            self.add_port_range(protocol, start, end)
+        elif self.is_port_valid(protocol, port):
+            self.add_port_to_table(protocol, port)
+
+    
     def is_port_range_and_valid(self, port_input):
         if '-' in port_input:
             port_range = port_input.split('-')
@@ -222,28 +233,19 @@ class MainWindow(QtWidgets.QMainWindow):
         
         logging.info(f"Valid port: {port}")
         return True
+    
 
-
-    def add_port(self, max_allowed_port=128):
-        if self.thread and self.thread.isRunning():
-            logging.warning("Attempted to add port while a thread is running.")
-            return
-        
-        total_port = sum(len(self.ports_list[protocol]) for protocol in self.ports_list.keys())
-
-        if total_port >= max_allowed_port:
-            logging.warning(f"Maximum allowed port in the table reached ({max_allowed_port}).")
-            return
-        
-        port = self.ui.lineEdit.text().strip()
-        protocol = self.ui.comboBox.currentText().lower()
-
-        if self.is_port_range_and_valid(port):
-            port_range = port.split('-')
-            start, end = int(port_range[0]), int(port_range[1])
-            self.add_port_range(protocol, start, end)
-        elif self.is_port_valid(protocol, port):
-            self.add_port_to_table(protocol, port)
+    def add_port_to_table(self, protocol, port):
+        try:
+            port = int(port)
+            self.ports_list[protocol].append(port)
+            self.insert_port_row(protocol.upper(), port)
+            self.ui.lineEdit.clear()
+            logging.info(f"Added port {port} for protocol {protocol.upper()}.")
+        except Exception as e:
+            logging.error(f"Error adding port: {e}")
+        finally:
+            self.keep_focus()
 
 
     def remove_port(self, row):
@@ -299,20 +301,9 @@ class MainWindow(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def handle_results(self, ports_status):
         try:
-            for row in range(self.ui.tableWidget.rowCount()):
-                self.ui.tableWidget.item(row, 3).setText("Unknown")
-
             for status, protocols in ports_status.items():
                 for protocol, ports in protocols.items():
-                    for port in ports:
-                        for row in range(self.ui.tableWidget.rowCount()):
-                            protocol_item = self.ui.tableWidget.item(row, 2)
-                            port_item = self.ui.tableWidget.item(row, 1)
-
-                            if protocol_item and port_item:
-                                if protocol_item.text().lower() == protocol and int(port_item.text()) == port:
-                                    self.ui.tableWidget.item(row, 3).setText(status.capitalize())
-                                    break
+                    self.update_ports_status(protocol, ports, status)
 
             self.thread.quit()
             self.thread.wait()
@@ -322,10 +313,33 @@ class MainWindow(QtWidgets.QMainWindow):
         finally:
             self.keep_focus()
 
+        
+    def set_default_table_status(self):
+        for row in range(self.ui.tableWidget.rowCount()):
+            self.ui.tableWidget.item(row, 3).setText("Unknown")
+
+
+    def update_ports_status(self, protocol, ports, status):
+        for port in ports:
+            self.update_port_row(protocol, port, status)
+
+    
+    def update_port_row(self, protocol, port, status):
+        for row in range(self.ui.tableWidget.rowCount()):
+            protocol_item = self.ui.tableWidget.item(row, 2)
+            port_item = self.ui.tableWidget.item(row, 1)
+
+            if protocol_item and port_item:
+                if protocol_item.text().lower() == protocol and int(port_item.text()) == port:
+                    # TODO: Add colors for status => green: open | red: closed
+                    self.ui.tableWidget.item(row, 3).setText(status.capitalize())
+                    break
 
 
 if __name__ == "__main__":
     setup_logging()
+    logging.info("Loading resources.")
+    resources.qInitResources()
 
     try:
         trigger_firewall_prompt()
@@ -340,3 +354,6 @@ if __name__ == "__main__":
         app.exec()
     except Exception as e:
         logging.error(f"An error occurred during application startup: {e}")
+    finally:
+        logging.info("Cleaning up resources.")
+        resources.qCleanupResources()
