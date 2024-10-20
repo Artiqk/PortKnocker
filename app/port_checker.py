@@ -86,7 +86,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.comboBox.activated.connect(self.keep_focus)
         self.ui.comboBox_2.activated.connect(self.keep_focus)
 
-        # FIXME: WARNING - Maximum allowed port in the table reached (False). ????
         self.ui.pushButton.clicked.connect(self.add_port)
         self.ui.lineEdit.returnPressed.connect(self.add_port)
         self.ui.pushButton_2.clicked.connect(self.start_port_checking)
@@ -155,7 +154,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.insert_port_row(protocol.upper(), port)
 
 
-    def add_port(self, max_allowed_port=128):
+    def add_port(self):
+        max_allowed_port = 128
+
         if self.thread and self.thread.isRunning():
             logging.warning("Attempted to add port while a thread is running.")
             return
