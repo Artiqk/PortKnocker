@@ -46,7 +46,7 @@ pip install -r requirements.txt
 python -m app.port_checker
 ```
 
-## Disclaimeer
+## Disclaimer
 
 This project depends on an external API, with the API path and IP stored in a ```.env``` file that is **not included** in this repository for **security reasons**. As a result, the code cannot be executed independently after cloning.
 
