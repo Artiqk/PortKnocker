@@ -153,29 +153,97 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.insert_port_row(protocol.upper(), port)
 
 
-    def add_port(self):
-        if self.thread and self.thread.isRunning():
-            logging.warning("Attempted to add port while a thread is running.")
-            return
-        
-        port = self.ui.lineEdit.text().strip()
-        protocol = self.ui.comboBox.currentText()
-
+    def add_port_to_table(self, protocol, port):
         try:
-            if port.isdigit() and int(port) > 0 and int(port) < 65535:
-                if int(port) not in self.ports_list[protocol.lower()]:
-                    self.ports_list[protocol.lower()].append(int(port))
-                    self.insert_port_row(protocol, port)
-                    self.ui.lineEdit.clear()
-                    logging.info(f"Added port {port} for protocol {protocol.upper()}.")
-                else:
-                    logging.warning(f"Port {port} is already in the list for protocol {protocol.upper()}.")
-            else:
-                logging.error(f"Invalid port number: {port}. Must be between 1 and 65535.")
+            port = int(port)
+            self.ports_list[protocol].append(port)
+            self.insert_port_row(protocol.upper(), port)
+            self.ui.lineEdit.clear()
+            logging.info(f"Added port {port} for protocol {protocol.upper()}.")
         except Exception as e:
             logging.error(f"Error adding port: {e}")
         finally:
             self.keep_focus()
+
+
+    def is_port_range_and_valid(self, port_input):
+        if '-' in port_input:
+            port_range = port_input.split('-')
+
+            if len(port_range) != 2:
+                logging.warning("Invalid port range format. Please use the format 'start-end', e.g., 22-80.")
+                return False
+            
+            try:
+                start = int(port_range[0])
+                end = int(port_range[1])
+                if start < 1 or end > 65535 or start >= end:
+                    logging.error(f"Invalid port range: {start}-{end}. Ports must be between 1-65535, and start must be less than end.")
+                    return False
+            except ValueError:
+                logging.error(f"Invalid port range values: {port_range[0]} - {port_range[1]}. Both values must be integers.")
+                return False
+            
+            logging.info(f"Valid port range: {start}-{end}")
+            return True
+        
+        return False
+    
+
+    def add_port_range(self, protocol, start, end, max_range=128):
+        total_port = (end - start)
+        try:
+            if total_port > max_range:
+                logging.warning(f"Too many ports selected ({total_port}). The maximum allowed is {max_range}.")
+                return
+            logging.info(f"Adding port range from {start} to {end}. Number of ports to add {end - start}.")
+            for port_nb in range(start, end + 1):
+                if self.is_port_valid(protocol, port_nb):
+                    self.add_port_to_table(protocol, port_nb)
+        except Exception as e:
+            logging.error(f"Error adding port range: {e}")
+
+
+    def is_port_valid(self, protocol, port):
+        try:
+            port = int(port)
+            if protocol not in ['tcp', 'udp']:
+                logging.error(f"Invalid protocol: {protocol}")
+                return False
+            if port < 1 or port > 65535:
+                logging.error(f"Invalid port: {port}. Must be a number between 1 and 65535.")
+                return False
+            if port in self.ports_list[protocol]:
+                logging.warning(f"Port {port} is already in the list for protocol {protocol.upper()}.")
+                return False
+        except ValueError:
+            logging.error(f"Invalid port value: {port}. Must be an integer.")
+            return False
+        
+        logging.info(f"Valid port: {port}")
+        return True
+
+
+    def add_port(self, max_allowed_port=128):
+        if self.thread and self.thread.isRunning():
+            logging.warning("Attempted to add port while a thread is running.")
+            return
+        
+        total_port = sum(len(self.ports_list[protocol]) for protocol in self.ports_list.keys())
+
+        if total_port >= max_allowed_port:
+            logging.warning(f"Maximum allowed port in the table reached ({max_allowed_port}).")
+            return
+        
+        port = self.ui.lineEdit.text().strip()
+        protocol = self.ui.comboBox.currentText().lower()
+
+        if self.is_port_range_and_valid(port):
+            port_range = port.split('-')
+            start, end = int(port_range[0]), int(port_range[1])
+            self.add_port_range(protocol, start, end)
+        elif self.is_port_valid(protocol, port):
+            self.add_port_to_table(protocol, port)
 
 
     def remove_port(self, row):
