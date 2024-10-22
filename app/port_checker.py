@@ -24,36 +24,48 @@ class Worker(QtCore.QObject):
         self._running = True
 
 
-    @QtCore.Slot()
-    def run(self):
-        logging.info("Worker started.")
+    def create_and_start_threads(self, protocol, ports):
         server_threads  = []
         request_threads = []
 
         try:
-            for protocol, ports in self.ports_list.items():
-                for port in ports:
-                    if not self._running:
-                        break
-                    try:
-                        server_thread = threading.Thread(target=start_server, args=(protocol, self.host, port))
-                        server_threads.append(server_thread)
-                        server_thread.start()
+            for port in ports:
+                server_thread = threading.Thread(target=start_server, args=(protocol, self.host, port))
+                server_threads.append(server_thread)
+                server_thread.start()
 
-                        request_thread = threading.Thread(target=handle_port_status, args=(protocol, port, self.ports_status))
-                        request_threads.append(request_thread)
-                        request_thread.start()
-                    except Exception as e:
-                        logging.error(f"Error starting server or request thread for {protocol.upper()} on port {port}: {e}")
+                request_thread = threading.Thread(target=handle_port_status, args=(protocol, port, self.ports_status))
+                request_threads.append(request_thread)
+                request_thread.start()
+        except Exception as e:
+            logging.error(f"Error starting server or request thread for {protocol.upper()} on port {port}: {e}")
+
+        return server_threads, request_threads
+    
+
+    def join_threads(self, server_threads, request_threads):
+        for thread in request_threads:
+            thread.join()
+
+        for thread in server_threads:
+            thread.join()
+
+
+    @QtCore.Slot()
+    def run(self):
+        logging.info("Worker started.")
+
+        try:
+            for protocol, ports in self.ports_list.items():
+                if not self._running:
+                    break
+                
+                server_threads, request_threads = self.create_and_start_threads(protocol, ports)
 
                 if not self._running:
                     break
 
-            for thread in request_threads:
-                thread.join()
-
-            for thread in server_threads:
-                thread.join()
+            self.join_threads(server_threads, request_threads)
 
         except Exception as e:
             logging.error(f"Error in Worker run method: {e}")
@@ -69,32 +81,35 @@ class Worker(QtCore.QObject):
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.ports_list = { 'tcp': [], 'udp': [] }
-
         super().__init__()
-        self.setWindowIcon(QtGui.QIcon(":icon.ico"))
-        self.setWindowTitle("Port Checker")
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
+
+        self.ports_list = { 'tcp': [], 'udp': [] }
 
         self.thread = None
         self.worker = None
 
+        self.setWindowIcon(QtGui.QIcon(":icon.ico"))
+        self.setWindowTitle("Port Checker")
+
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+
         self.setupLocalIpComboBox()
         self.setupProtocolComboBox()
 
+        self.ui.tableWidget.setColumnWidth(0, 30)
+        
         self.ui.comboBox.activated.connect(self.keep_focus)
         self.ui.comboBox_2.activated.connect(self.keep_focus)
 
         self.ui.pushButton.clicked.connect(self.add_port)
         self.ui.lineEdit.returnPressed.connect(self.add_port)
+
         self.ui.pushButton_2.clicked.connect(self.start_port_checking)
 
         shortcut_f5 = QShortcut(QKeySequence("F5"), self)
         shortcut_f5.activated.connect(self.start_port_checking)
 
-
-        self.ui.tableWidget.setColumnWidth(0, 30)
 
 
     def setupLocalIpComboBox(self):
