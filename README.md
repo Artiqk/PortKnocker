@@ -31,8 +31,8 @@ pip install -r requirements.txt
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/Artiqk/PortChecker.git
-cd PortChecker
+git clone https://github.com/Artiqk/PortKnocker.git
+cd PortKnocker
 ```
 
 2. Install the required dependencies:
@@ -43,7 +43,7 @@ pip install -r requirements.txt
 3. Run the application:
 
 ```bash
-python -m app.port_checker
+python main.py
 ```
 
 ## Disclaimer
