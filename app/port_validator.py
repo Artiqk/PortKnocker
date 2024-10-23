@@ -1,5 +1,5 @@
 import logging
-from app.port_knocker import PortsList
+from app.port_utils import PortsList
 
 def is_port_range_and_valid(port_input: str) -> bool:
     """Check if the given port input is a port range and a valid one in the format 'start-end'."""

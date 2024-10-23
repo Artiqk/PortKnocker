@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from config.logging_config import setup_logging
 
 
+PortsList = Dict[str, List[int]]
 PortsStatus = Dict[str, Dict[str, List[int]]]
 
 load_dotenv()

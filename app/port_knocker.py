@@ -4,12 +4,9 @@ from typing import Dict, List, Tuple
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtGui import QShortcut, QKeySequence
 from app.window_ui import Ui_MainWindow
-from app.port_utils import start_server, handle_port_status, PortsStatus
+from app.port_utils import start_server, handle_port_status, PortsList, PortsStatus
 from app.network_utils import get_local_ips
 from app.port_validator import is_port_range_and_valid, is_port_valid
-
-
-PortsList = Dict[str, List[int]]
 
 
 class Worker(QtCore.QObject):
