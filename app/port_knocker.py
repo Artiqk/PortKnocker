@@ -1,11 +1,9 @@
 import threading
 import logging
-import resources.resources as resources
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtGui import QShortcut, QKeySequence
 from app.window_ui import Ui_MainWindow
-from app.port_utils import start_server, handle_port_status, trigger_firewall_prompt
-from config.logging_config import setup_logging
+from app.port_utils import start_server, handle_port_status
 from app.network_utils import get_local_ips
 from app.port_validator import is_port_range_and_valid, is_port_valid
 
@@ -94,7 +92,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.worker = None
 
         self.setWindowIcon(QtGui.QIcon(":icon.ico"))
-        self.setWindowTitle("Port Checker")
+        self.setWindowTitle("Port Knocker")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -305,26 +303,3 @@ class MainWindow(QtWidgets.QMainWindow):
                 if protocol_item.text().lower() == protocol and int(port_item.text()) == port:
                     self.ui.tableWidget.item(row, 3).setText(status.capitalize())
                     break
-
-
-if __name__ == "__main__":
-    setup_logging()
-    logging.info("Loading resources.")
-    resources.qInitResources()
-
-    try:
-        trigger_firewall_prompt()
-
-        app = QtWidgets.QApplication()
-        app.setStyle("Fusion")
-
-        window = MainWindow()
-        window.show()
-        window.ui.lineEdit.setFocus()
-        
-        app.exec()
-    except Exception as e:
-        logging.error(f"An error occurred during application startup: {e}")
-    finally:
-        logging.info("Cleaning up resources.")
-        resources.qCleanupResources()
