@@ -1,5 +1,3 @@
-import socket
-import psutil
 import threading
 import logging
 import resources.resources as resources
@@ -8,6 +6,8 @@ from PySide6.QtGui import QShortcut, QKeySequence
 from app.window_ui import Ui_MainWindow
 from app.port_utils import start_server, handle_port_status, trigger_firewall_prompt
 from config.logging_config import setup_logging
+from app.network_utils import get_local_ips
+from app.port_validator import is_port_range_and_valid, is_port_valid
 
 
 class Worker(QtCore.QObject):
@@ -22,6 +22,34 @@ class Worker(QtCore.QObject):
             'closed': { 'tcp': [], 'udp': [] }
         }
         self._running = True
+
+
+    @QtCore.Slot()
+    def run(self):
+        logging.info("Worker started.")
+        server_threads_all  = []
+        request_threads_all = []
+
+        try:
+            for protocol, ports in self.ports_list.items():
+                if not self._running:
+                    break
+                
+                server_threads, request_threads = self.create_and_start_threads(protocol, ports)
+
+                if not self._running:
+                    break
+
+                server_threads_all.extend(server_threads)
+                request_threads_all.extend(request_threads)
+
+            self.join_threads(server_threads_all, request_threads_all)
+
+        except Exception as e:
+            logging.error(f"Error in Worker run method: {e}")
+
+        logging.info("Worker finished.")
+        self.finished.emit(self.ports_status)
 
 
     def create_and_start_threads(self, protocol, ports):
@@ -51,29 +79,6 @@ class Worker(QtCore.QObject):
             thread.join()
 
 
-    @QtCore.Slot()
-    def run(self):
-        logging.info("Worker started.")
-
-        try:
-            for protocol, ports in self.ports_list.items():
-                if not self._running:
-                    break
-                
-                server_threads, request_threads = self.create_and_start_threads(protocol, ports)
-
-                if not self._running:
-                    break
-
-            self.join_threads(server_threads, request_threads)
-
-        except Exception as e:
-            logging.error(f"Error in Worker run method: {e}")
-
-        logging.info("Worker finished.")
-        self.finished.emit(self.ports_status)
-
-
     def stop(self):
         self._running = False
 
@@ -94,16 +99,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.setupLocalIpComboBox()
-        self.setupProtocolComboBox()
+        self.setup_local_ip_combo_box()
+        self.setup_protocol_combo_box()
 
         self.ui.tableWidget.setColumnWidth(0, 30)
-        
+
         self.ui.comboBox.activated.connect(self.keep_focus)
         self.ui.comboBox_2.activated.connect(self.keep_focus)
 
-        self.ui.pushButton.clicked.connect(self.add_port)
-        self.ui.lineEdit.returnPressed.connect(self.add_port)
+        self.ui.pushButton.clicked.connect(self.add_port_or_range)
+        self.ui.lineEdit.returnPressed.connect(self.add_port_or_range)
 
         self.ui.pushButton_2.clicked.connect(self.start_port_checking)
 
@@ -111,23 +116,24 @@ class MainWindow(QtWidgets.QMainWindow):
         shortcut_f5.activated.connect(self.start_port_checking)
 
 
+    def keep_focus(self):
+        self.ui.lineEdit.setFocus()
 
-    def setupLocalIpComboBox(self):
-        local_ips = []
-        for interface, addrs in psutil.net_if_addrs().items():
-            for addr in addrs:
-                if addr.family == socket.AF_INET and addr.address != "127.0.0.1":
-                    local_ips.append(addr.address)
+
+    def setup_local_ip_combo_box(self):
+        local_ips = get_local_ips()
         self.ui.comboBox_2.addItems(local_ips)
 
 
-    def setupProtocolComboBox(self):
+    def setup_protocol_combo_box(self):
         protocols = ["TCP", "UDP"]
         self.ui.comboBox.addItems(protocols)
 
 
-    def keep_focus(self):
-        self.ui.lineEdit.setFocus()
+    def populate_table(self):
+        for protocol, ports in self.ports_list.items():
+            for port in ports:
+                self.insert_port_row(protocol.upper(), port)
 
 
     def insert_port_row(self, protocol, port):
@@ -158,18 +164,11 @@ class MainWindow(QtWidgets.QMainWindow):
             }
         """)
         remove_button.clicked.connect(lambda checked: self.remove_port(row_position))
+
         self.ui.tableWidget.setCellWidget(row_position, 0, remove_button)
 
 
-    def populate_table(self):
-        self.ui.tableWidget.setRowCount(0)
-
-        for protocol, ports in self.ports_list.items():
-            for port in ports:
-                self.insert_port_row(protocol.upper(), port)
-
-
-    def add_port(self):
+    def add_port_or_range(self):
         max_allowed_port = 128
 
         if self.thread and self.thread.isRunning():
@@ -185,39 +184,15 @@ class MainWindow(QtWidgets.QMainWindow):
         port = self.ui.lineEdit.text().strip()
         protocol = self.ui.comboBox.currentText().lower()
 
-        if self.is_port_range_and_valid(port):
+        if is_port_range_and_valid(port):
             port_range = port.split('-')
             start, end = int(port_range[0]), int(port_range[1])
-            self.add_port_range(protocol, start, end)
-        elif self.is_port_valid(protocol, port):
+            self.add_port_range_to_table(protocol, start, end)
+        elif is_port_valid(protocol, port, self.ports_list):
             self.add_port_to_table(protocol, port)
 
-    
-    def is_port_range_and_valid(self, port_input):
-        if '-' in port_input:
-            port_range = port_input.split('-')
 
-            if len(port_range) != 2:
-                logging.warning("Invalid port range format. Please use the format 'start-end', e.g., 22-80.")
-                return False
-            
-            try:
-                start = int(port_range[0])
-                end = int(port_range[1])
-                if start < 1 or end > 65535 or start >= end:
-                    logging.error(f"Invalid port range: {start}-{end}. Ports must be between 1-65535, and start must be less than end.")
-                    return False
-            except ValueError:
-                logging.error(f"Invalid port range values: {port_range[0]} - {port_range[1]}. Both values must be integers.")
-                return False
-            
-            logging.info(f"Valid port range: {start}-{end}")
-            return True
-        
-        return False
-    
-
-    def add_port_range(self, protocol, start, end, max_range=128):
+    def add_port_range_to_table(self, protocol, start, end, max_range=128):
         total_port = (end - start)
         try:
             if total_port > max_range:
@@ -225,30 +200,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
             logging.info(f"Adding port range from {start} to {end}. Number of ports to add {end - start}.")
             for port_nb in range(start, end + 1):
-                if self.is_port_valid(protocol, port_nb):
+                if is_port_valid(protocol, port_nb, self.ports_list):
                     self.add_port_to_table(protocol, port_nb)
         except Exception as e:
             logging.error(f"Error adding port range: {e}")
-
-
-    def is_port_valid(self, protocol, port):
-        try:
-            port = int(port)
-            if protocol not in ['tcp', 'udp']:
-                logging.error(f"Invalid protocol: {protocol}")
-                return False
-            if port < 1 or port > 65535:
-                logging.error(f"Invalid port: {port}. Must be a number between 1 and 65535.")
-                return False
-            if port in self.ports_list[protocol]:
-                logging.warning(f"Port {port} is already in the list for protocol {protocol.upper()}.")
-                return False
-        except ValueError:
-            logging.error(f"Invalid port value: {port}. Must be an integer.")
-            return False
-        
-        logging.info(f"Valid port: {port}")
-        return True
     
 
     def add_port_to_table(self, protocol, port):
@@ -279,6 +234,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             try:
                 ports.remove(port)
+                self.ui.tableWidget.setRowCount(0)
                 self.populate_table()
                 logging.info(f"Removed port {port} for protocol {protocol.upper()}.")
             except ValueError:
