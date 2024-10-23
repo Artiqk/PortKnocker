@@ -1,8 +1,8 @@
-# Port Checker
+# Port Knocker
 
 ## Overview
 
-**Port Checker** is a desktop application developed using Python and the PySide6 framework. This tool allows users to check if port forwarding is working by monitoring the status of specified TCP and UDP ports on a local machine. It is designed to be user-friendly, making it easy for both technical and non-technical users to verify their network configurations.
+**Port Knocker** is a desktop application developed using Python and the PySide6 framework. This tool allows users to check if port forwarding is working by monitoring the status of specified TCP and UDP ports on a local machine. It is designed to be user-friendly, making it easy for both technical and non-technical users to verify their network configurations.
 
 ## Features
 
@@ -13,7 +13,7 @@
 
 ## Requirements
 
-To run the Port Checker, ensure you have the following installed:
+To run the Port Knocker, ensure you have the following installed:
 
 - Python 3.6 or higher
 - PySide6
