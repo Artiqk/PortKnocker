@@ -4,8 +4,12 @@ import threading
 import random
 import os
 import logging
+from typing import Dict, List, Optional
 from dotenv import load_dotenv
 from config.logging_config import setup_logging
+
+
+PortsStatus = Dict[str, Dict[str, List[int]]]
 
 load_dotenv()
 
@@ -13,7 +17,9 @@ api_ip = os.getenv("API_IP")
 api_path = os.getenv("API_PATH")
 
 
-def start_tcp_server(host, port, timeout):
+
+def start_tcp_server(host: str, port: int, timeout: float) -> None:
+    """Start a TCP server and accept one connection."""
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             logging.info(f"Starting TCP server on {host}:{port}")
@@ -32,7 +38,8 @@ def start_tcp_server(host, port, timeout):
         logging.critical(f"Unexpected error in TCP server on {host}:{port}: {e}")
 
 
-def start_udp_server(host, port, timeout):
+def start_udp_server(host: str, port: int, timeout: float) -> None:
+    """Start a UDP server and listen for one message."""
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             logging.info(f"Starting UDP server on {host}:{port}")
@@ -50,7 +57,8 @@ def start_udp_server(host, port, timeout):
         logging.critical(f"Unexpected error in UDP server on {host}:{port}: {e}")
 
 
-def start_server(protocol, host, port, timeout=3):
+def start_server(protocol: str, host: str, port: int, timeout: float = 3):
+    """Start a server based on the specified protocol (TCP or UDP)."""
     try:
         if protocol == 'tcp':
             start_tcp_server(host, port, timeout)
@@ -62,7 +70,8 @@ def start_server(protocol, host, port, timeout=3):
         logging.critical(f"Error in starting {protocol.upper()} server on {host}:{port}: {e}")
 
 
-def handle_port_status(protocol, port, ports_status):
+def handle_port_status(protocol: str, port: int, ports_status: PortsStatus) -> None:
+    """Check and update the status of a given port for the specified protocol."""
     try:
         logging.info(f"Checking port {port} for protocol {protocol.upper()}")
         port_open = is_port_open(protocol, port)
@@ -77,7 +86,8 @@ def handle_port_status(protocol, port, ports_status):
         logging.error(f"Error handling port status for {protocol.upper()} on port {port}: {e}")
 
 
-def is_port_open(protocol, port):
+def is_port_open(protocol: str, port: int) -> bool:
+    """Check if a specific port is open using the API."""
     api_url = f"http://{api_ip}/{api_path}/{protocol}/{port}"
     
     try:
@@ -111,7 +121,8 @@ def is_port_open(protocol, port):
         return False
 
     
-def trigger_firewall_prompt():
+def trigger_firewall_prompt() -> None:
+    """Trigger a prompt to open firewall ports for TCP and UDP servers."""
     try:
         port = get_random_port()
         logging.info(f"Randomly selected port: {port}")
@@ -131,7 +142,8 @@ def trigger_firewall_prompt():
         logging.warning(f"Error triggering firewall prompt: {e}")
 
 
-def get_random_port(max_attempts=10):
+def get_random_port(max_attempts: int = 10) -> Optional[int]:
+    """Get a random available port within a specified number of attempts."""
     attempts = 0
     while attempts < max_attempts:
         port = random.randint(49152, 65535)
@@ -144,5 +156,5 @@ def get_random_port(max_attempts=10):
                 logging.warning(f"Port {port} is in use, trying another ({max_attempts - attempts} attempts left).")
         attempts += 1
     
-    logging.error("Exceeded maximum apptemps to find an available port.")
-    return None
+    logging.error("Exceeded maximum attempts to find an available port.")
+    raise RuntimeError("No available ports found after maximum attempts.")
