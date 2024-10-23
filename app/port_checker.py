@@ -150,7 +150,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tableWidget.setItem(row_position, 2, protocol_item)
         self.ui.tableWidget.setItem(row_position, 3, QtWidgets.QTableWidgetItem("Pending"))
 
-        # TODO: Add button to remove all ports
         remove_button = QtWidgets.QPushButton("🗑️")
         remove_button.setStyleSheet("""
             QPushButton {
@@ -272,6 +271,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def handle_results(self, ports_status):
+        self.set_default_table_status()
         try:
             for status, protocols in ports_status.items():
                 for protocol, ports in protocols.items():
@@ -303,7 +303,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if protocol_item and port_item:
                 if protocol_item.text().lower() == protocol and int(port_item.text()) == port:
-                    # TODO: Add colors for status => green: open | red: closed
                     self.ui.tableWidget.item(row, 3).setText(status.capitalize())
                     break
 
