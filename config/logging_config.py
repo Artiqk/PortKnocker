@@ -1,12 +1,14 @@
 import logging
 import sys
 
-def setup_logging():
+def setup_logging(config):
+    handlers = [logging.StreamHandler(sys.stderr)]
+
+    if config.DEBUG:
+        handlers.append(logging.FileHandler('./logs/app.log', mode='a'))
+
     logging.basicConfig(
-        level=logging.INFO,  # Adjust this to change the default log level
+        level=logging.DEBUG if config.DEBUG else logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.StreamHandler(sys.stderr),  # Log to standard error
-            # logging.FileHandler('app.log', mode='a'),
-        ]
+        handlers=handlers
     )
