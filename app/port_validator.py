@@ -1,6 +1,8 @@
 import logging
+from app.port_knocker import PortsList
 
-def is_port_range_and_valid(port_input):
+def is_port_range_and_valid(port_input: str) -> bool:
+    """Check if the given port input is a port range and a valid one in the format 'start-end'."""
     if '-' in port_input:
         port_range = port_input.split('-')
 
@@ -24,7 +26,8 @@ def is_port_range_and_valid(port_input):
     return False
 
 
-def is_port_valid(protocol, port, ports_list):
+def is_port_valid(protocol: str, port: str, ports_list: PortsList) -> bool:
+    """Validate if the specified port is valid for the given protocol and not already in the ports list."""
     try:
         port = int(port)
         if protocol not in ['tcp', 'udp']:
