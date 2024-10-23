@@ -1,17 +1,22 @@
 import threading
 import logging
+from typing import Dict, List, Tuple
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtGui import QShortcut, QKeySequence
 from app.window_ui import Ui_MainWindow
-from app.port_utils import start_server, handle_port_status
+from app.port_utils import start_server, handle_port_status, PortsStatus
 from app.network_utils import get_local_ips
 from app.port_validator import is_port_range_and_valid, is_port_valid
+
+
+PortsList = Dict[str, List[int]]
 
 
 class Worker(QtCore.QObject):
     finished = QtCore.Signal(dict)
 
-    def __init__(self, ports_list, host):
+    def __init__(self, ports_list: PortsList, host: str) -> None:
+        """Initialize the Worker with a ports list and host."""
         super().__init__()
         self.ports_list = ports_list
         self.host = host
@@ -23,7 +28,8 @@ class Worker(QtCore.QObject):
 
 
     @QtCore.Slot()
-    def run(self):
+    def run(self) -> None:
+        """Start the worker threads for handling server and request processing."""
         logging.info("Worker started.")
         server_threads_all  = []
         request_threads_all = []
@@ -50,7 +56,8 @@ class Worker(QtCore.QObject):
         self.finished.emit(self.ports_status)
 
 
-    def create_and_start_threads(self, protocol, ports):
+    def create_and_start_threads(self, protocol: str, ports: List[int]) -> Tuple[List[threading.Thread], List[threading.Thread]]:
+        """Create and start server and request threads for the given protocol and ports."""
         server_threads  = []
         request_threads = []
 
@@ -69,7 +76,8 @@ class Worker(QtCore.QObject):
         return server_threads, request_threads
     
 
-    def join_threads(self, server_threads, request_threads):
+    def join_threads(self, server_threads: List[threading.Thread], request_threads: List[threading.Thread]) -> None:
+        """Join all threads to ensure they complete before proceeding."""
         for thread in request_threads:
             thread.join()
 
@@ -77,13 +85,15 @@ class Worker(QtCore.QObject):
             thread.join()
 
 
-    def stop(self):
+    def stop(self) -> None:
+        """Stop the worker by setting the running flag to False."""
         self._running = False
 
 
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the MainWindow and set up UI components."""
         super().__init__()
 
         self.ports_list = { 'tcp': [], 'udp': [] }
@@ -114,27 +124,32 @@ class MainWindow(QtWidgets.QMainWindow):
         shortcut_f5.activated.connect(self.start_port_checking)
 
 
-    def keep_focus(self):
+    def keep_focus(self) -> None:
+        """Set focus to the input line edit."""
         self.ui.lineEdit.setFocus()
 
 
-    def setup_local_ip_combo_box(self):
+    def setup_local_ip_combo_box(self) -> None:
+        """Populate the local IP combo box with available IPs."""
         local_ips = get_local_ips()
         self.ui.comboBox_2.addItems(local_ips)
 
 
-    def setup_protocol_combo_box(self):
+    def setup_protocol_combo_box(self) -> None:
+        """Populate the protocol combo box with TCP and UDP options."""
         protocols = ["TCP", "UDP"]
         self.ui.comboBox.addItems(protocols)
 
 
-    def populate_table(self):
+    def populate_table(self) -> None:
+        """Populate the table with ports from the ports list."""
         for protocol, ports in self.ports_list.items():
             for port in ports:
                 self.insert_port_row(protocol.upper(), port)
 
 
-    def insert_port_row(self, protocol, port):
+    def insert_port_row(self, protocol: str, port: int) -> None:
+        """Insert a new row in the table for the specified protocol and port."""
         row_position = self.ui.tableWidget.rowCount()
         self.ui.tableWidget.insertRow(row_position)
 
@@ -165,7 +180,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tableWidget.setCellWidget(row_position, 0, remove_button)
 
 
-    def add_port_or_range(self):
+    def add_port_or_range(self) -> None:
+        """Add a port or a range of ports to the ports list and update the table."""
         max_allowed_port = 128
 
         if self.thread and self.thread.isRunning():
@@ -189,7 +205,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.add_port_to_table(protocol, port)
 
 
-    def add_port_range_to_table(self, protocol, start, end, max_range=128):
+    def add_port_range_to_table(self, protocol: str, start: int, end: int, max_range: int = 128) -> None:
+        """Add a range of ports to the table for the specified protocol."""
         total_port = (end - start)
         try:
             if total_port > max_range:
@@ -203,7 +220,8 @@ class MainWindow(QtWidgets.QMainWindow):
             logging.error(f"Error adding port range: {e}")
     
 
-    def add_port_to_table(self, protocol, port):
+    def add_port_to_table(self, protocol: str, port: str) -> None:
+        """Add a single port to the table for the specified protocol."""
         try:
             port = int(port)
             self.ports_list[protocol].append(port)
@@ -216,7 +234,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.keep_focus()
 
 
-    def remove_port(self, row):
+    def remove_port(self, row: int) -> None:
+        """Remove a port from the table based on the row index."""
         if self.thread and self.thread.isRunning():
             logging.warning("Attempted to remove port while a thread is running.")
             return
@@ -243,7 +262,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.keep_focus()
 
 
-    def start_port_checking(self):
+    def start_port_checking(self) -> None:
+        """Start the port checking process using a worker thread."""
         if self.thread and self.thread.isRunning():
             logging.warning(f"Attempted to start port checking while a thread is running.")
             return
@@ -268,7 +288,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     @QtCore.Slot()
-    def handle_results(self, ports_status):
+    def handle_results(self, ports_status: PortsStatus) -> None:
+        """Handle the results of the port checking and update the table."""
         self.set_default_table_status()
         try:
             for status, protocols in ports_status.items():
@@ -284,17 +305,20 @@ class MainWindow(QtWidgets.QMainWindow):
             self.keep_focus()
 
         
-    def set_default_table_status(self):
+    def set_default_table_status(self) -> None:
+        """Set the default status of all ports in the table to 'Unknown'."""
         for row in range(self.ui.tableWidget.rowCount()):
             self.ui.tableWidget.item(row, 3).setText("Unknown")
 
 
-    def update_ports_status(self, protocol, ports, status):
+    def update_ports_status(self, protocol: str, ports: List[int], status: str) -> None:
+        """Update the status of ports in the table for a given protocol."""
         for port in ports:
             self.update_port_row(protocol, port, status)
 
     
-    def update_port_row(self, protocol, port, status):
+    def update_port_row(self, protocol: str, port: int, status: str) -> None:
+        """Update the status of a specific port row in the table."""
         for row in range(self.ui.tableWidget.rowCount()):
             protocol_item = self.ui.tableWidget.item(row, 2)
             port_item = self.ui.tableWidget.item(row, 1)
