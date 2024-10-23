@@ -12,8 +12,6 @@ load_dotenv()
 api_ip = os.getenv("API_IP")
 api_path = os.getenv("API_PATH")
 
-setup_logging()
-
 
 def start_tcp_server(host, port, timeout):
     try:
@@ -52,8 +50,7 @@ def start_udp_server(host, port, timeout):
         logging.critical(f"Unexpected error in UDP server on {host}:{port}: {e}")
 
 
-# FIXME - Play with default timeout
-def start_server(protocol, host, port, timeout=4):
+def start_server(protocol, host, port, timeout=3):
     try:
         if protocol == 'tcp':
             start_tcp_server(host, port, timeout)
