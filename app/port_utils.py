@@ -17,7 +17,6 @@ api_ip = os.getenv("API_IP")
 api_path = os.getenv("API_PATH")
 
 
-
 def start_tcp_server(host: str, port: int, timeout: float) -> None:
     """Start a TCP server and accept one connection."""
     try:
