@@ -107,6 +107,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setup_local_ip_combo_box()
         self.setup_protocol_combo_box()
 
+        self.ui.tableWidget.horizontalHeader().setStretchLastSection(True)
+        self.ui.tableWidget.verticalHeader().setVisible(False)
         self.ui.tableWidget.setColumnWidth(0, 30)
 
         self.ui.comboBox.activated.connect(self.keep_focus)
