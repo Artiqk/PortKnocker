@@ -276,7 +276,9 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         for row in range(self.ui.tableWidget.rowCount()):
-            self.ui.tableWidget.item(row, 3).setText("Checking...")
+            item = self.ui.tableWidget.item(row, 3)
+            item.setText("Checking...")
+            item.setBackground(QtGui.QBrush())
         
         host = self.ui.comboBox_2.currentText()
 
