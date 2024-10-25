@@ -1,6 +1,6 @@
 import threading
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtGui import QShortcut, QKeySequence
 from ui.window_ui import Ui_MainWindow
@@ -119,6 +119,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui.pushButton_2.clicked.connect(self.start_port_checking)
 
+        self.ui.pushButton_3.clicked.connect(self.reset)
+
         shortcut_f5 = QShortcut(QKeySequence("F5"), self)
         shortcut_f5.activated.connect(self.start_port_checking)
 
@@ -233,6 +235,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.keep_focus()
 
 
+    def reset(self) -> None:
+        """Remove all ports from table"""
+        self.ui.tableWidget.setRowCount(0)
+        self.ports_list = { 'tcp': [], 'udp': [] }
+
+
     def remove_port(self, row: int) -> None:
         """Remove a port from the table based on the row index."""
         if self.thread and self.thread.isRunning():
@@ -318,11 +326,20 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def update_port_row(self, protocol: str, port: int, status: str) -> None:
         """Update the status of a specific port row in the table."""
+        row = self.find_port_row(protocol, port)
+        if row is not None:
+            item = self.ui.tableWidget.item(row, 3)
+            item.setText(status.capitalize())
+            color = QtGui.QColor("green") if status == "open" else QtGui.QColor("red")
+            item.setBackground(color)
+
+
+    def find_port_row(self, protocol: str, port: str) -> Optional[int]:
+        """Find the row number in the QTableWidget that corresponds to the given protocol and port."""
         for row in range(self.ui.tableWidget.rowCount()):
             protocol_item = self.ui.tableWidget.item(row, 2)
             port_item = self.ui.tableWidget.item(row, 1)
 
-            if protocol_item and port_item:
-                if protocol_item.text().lower() == protocol and int(port_item.text()) == port:
-                    self.ui.tableWidget.item(row, 3).setText(status.capitalize())
-                    break
+            if protocol_item.text().lower() == protocol and port_item.text() == str(port):
+                return row
+        return None
