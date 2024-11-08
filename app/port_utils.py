@@ -100,8 +100,8 @@ def is_port_open(protocol: str, port: int) -> bool:
         elif res.status_code == 400:
             logging.warning(f"Bad request for port {port} ({protocol.upper()})")
             return False
-        elif res.status_code == 404:
-            logging.warning(f"Not found: port {port} ({protocol.upper()})")
+        elif res.status_code == 444:
+            logging.warning(f"Port {port} ({protocol.upper()}) is closed or unreachable")
             return False
         elif res.status_code == 408:
             logging.warning(f"Request timeout for port {port} ({protocol.upper()})")
