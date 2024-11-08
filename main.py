@@ -23,7 +23,6 @@ if __name__ == "__main__":
         trigger_firewall_prompt()
 
         app = QtWidgets.QApplication()
-        app.setStyle("Fusion")
 
         window = MainWindow()
         window.show()
