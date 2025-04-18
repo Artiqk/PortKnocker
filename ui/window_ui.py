@@ -128,7 +128,7 @@ class Ui_MainWindow(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"PortKnocker", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Local IP", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Port", None))
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"ADD", None))
