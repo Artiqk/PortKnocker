@@ -46,6 +46,16 @@ pip install -r requirements.txt
 python main.py
 ```
 
+## Note for Debian-based systems
+
+If you encounter an error related to the Qt "xcb" platform plugin, make sure to install the required package:
+
+```
+sudo apt install libxcb-cursor0
+```
+
+This is needed for Qt applications starting from version 6.5.0.
+
 ## Disclaimer
 
 This project depends on an external API, with the API path and IP stored in a ```.env``` file that is **not included** in this repository for **security reasons**. As a result, the code cannot be executed independently after cloning.
