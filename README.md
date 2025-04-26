@@ -76,6 +76,16 @@ If you require access to the API, please note that it is not publicly available 
 - **Return** Add port to the list.
 - **F5**: Start checking the ports.
 
+### Running on Privileged Ports (Below 1024)
+
+If you're checking ports under 1024 (like 22 or 80), Linux will block you unless you run the app with elevated privileges.  
+Use this command to give it permission without full root:
+
+```bash
+sudo setcap 'cap_net_bind_service=+ep' /path/to/binary
+```
+Replace /path/to/binary with the binary you're using. Or just run the thing with `sudo` like a true daredevil.
+
 ## Contributing
 
 Contributions are welcome! If you'd like to contribute, please follow these steps:
