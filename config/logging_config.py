@@ -1,7 +1,7 @@
 import logging
 import sys
 
-def setup_logging(config):
+def setup_logging(config = ''):
     handlers = [logging.StreamHandler(sys.stderr)]
 
     if config == 'DEBUG':
