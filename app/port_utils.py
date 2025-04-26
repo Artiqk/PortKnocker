@@ -93,31 +93,24 @@ def is_port_open(protocol: str, port: int) -> bool:
         logging.info(f"Sending request to {api_url}")
         res = requests.get(api_url)
 
-        if res.ok:
-            response_data = res.json()
-
-            logging.debug(response_data)
-
-            statusCode = response_data['statusCode']
-
-            if statusCode == 200:
-                logging.info(f"Port {port} ({protocol.upper()}) is open according to API response")
-                return True
-            elif statusCode == 400:
-                logging.warning(f"Bad request for port {port} ({protocol.upper()})")
-                return False
-            elif statusCode == 444:
-                logging.warning(f"Port {port} ({protocol.upper()}) is closed or unreachable")
-                return False
-            elif statusCode == 408:
-                logging.warning(f"Request timeout for port {port} ({protocol.upper()})")
-                return False
-            elif statusCode == 500:
-                logging.error(f"Server error (500) for port {port} ({protocol.upper()})")
-                return False
-            else:
-                logging.warning(f"Unexpected status code {statusCode} for port {port} ({protocol.upper()})")
-                return False
+        if res.status_code == 200:
+            logging.info(f"Port {port} ({protocol.upper()}) is open according to API response")
+            return True
+        elif res.status_code == 400:
+            logging.warning(f"Bad request for port {port} ({protocol.upper()})")
+            return False
+        elif res.status_code == 444:
+            logging.warning(f"Port {port} ({protocol.upper()}) is closed or unreachable")
+            return False
+        elif res.status_code == 408:
+            logging.warning(f"Request timeout for port {port} ({protocol.upper()})")
+            return False
+        elif res.status_code == 500:
+            logging.error(f"Server error (500) for port {port} ({protocol.upper()})")
+            return False
+        else:
+            logging.warning(f"Unexpected status code {res.status_code} for port {port} ({protocol.upper()})")
+            return False
         
     except requests.ConnectionError as e:
         logging.error(f"Connection error when checking port {port} ({protocol.upper()}): {e}")
