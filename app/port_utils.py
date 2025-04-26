@@ -6,7 +6,6 @@ import os
 import logging
 from typing import Dict, List, Optional
 from dotenv import load_dotenv
-from config.logging_config import setup_logging
 
 
 PortsList = Dict[str, List[int]]
@@ -48,7 +47,7 @@ def start_udp_server(host: str, port: int, timeout: float) -> None:
             try:
                 data, addr = udp_socket.recvfrom(1024)
                 logging.info(f"Received data from {addr}")
-                udp_socket.sendto(b"Port test", addr)
+                udp_socket.sendto(b"PONG", addr)
             except socket.timeout:
                 logging.warning(f"UDP server on {host}:{port} timed out after {timeout} seconds")
     except socket.error as e:
@@ -57,7 +56,7 @@ def start_udp_server(host: str, port: int, timeout: float) -> None:
         logging.critical(f"Unexpected error in UDP server on {host}:{port}: {e}")
 
 
-def start_server(protocol: str, host: str, port: int, timeout: float = 3):
+def start_server(protocol: str, host: str, port: int, timeout: float = 2):
     """Start a server based on the specified protocol (TCP or UDP)."""
     try:
         if protocol == 'tcp':
@@ -94,24 +93,31 @@ def is_port_open(protocol: str, port: int) -> bool:
         logging.info(f"Sending request to {api_url}")
         res = requests.get(api_url)
 
-        if res.status_code == 200:
-            logging.info(f"Port {port} ({protocol.upper()}) is open according to API response")
-            return True
-        elif res.status_code == 400:
-            logging.warning(f"Bad request for port {port} ({protocol.upper()})")
-            return False
-        elif res.status_code == 444:
-            logging.warning(f"Port {port} ({protocol.upper()}) is closed or unreachable")
-            return False
-        elif res.status_code == 408:
-            logging.warning(f"Request timeout for port {port} ({protocol.upper()})")
-            return False
-        elif res.status_code == 500:
-            logging.error(f"Server error (500) for port {port} ({protocol.upper()})")
-            return False
-        else:
-            logging.warning(f"Unexpected status code {res.status_code} for port {port} ({protocol.upper()})")
-            return False
+        if res.ok:
+            response_data = res.json()
+
+            logging.debug(response_data)
+
+            statusCode = response_data['statusCode']
+
+            if statusCode == 200:
+                logging.info(f"Port {port} ({protocol.upper()}) is open according to API response")
+                return True
+            elif statusCode == 400:
+                logging.warning(f"Bad request for port {port} ({protocol.upper()})")
+                return False
+            elif statusCode == 444:
+                logging.warning(f"Port {port} ({protocol.upper()}) is closed or unreachable")
+                return False
+            elif statusCode == 408:
+                logging.warning(f"Request timeout for port {port} ({protocol.upper()})")
+                return False
+            elif statusCode == 500:
+                logging.error(f"Server error (500) for port {port} ({protocol.upper()})")
+                return False
+            else:
+                logging.warning(f"Unexpected status code {statusCode} for port {port} ({protocol.upper()})")
+                return False
         
     except requests.ConnectionError as e:
         logging.error(f"Connection error when checking port {port} ({protocol.upper()}): {e}")
@@ -127,8 +133,8 @@ def trigger_firewall_prompt() -> None:
         port = get_random_port()
         logging.info(f"Randomly selected port: {port}")
 
-        tcp_server_thread = threading.Thread(target=start_server, args=('tcp', '0.0.0.0', port, 3))
-        udp_server_thread = threading.Thread(target=start_server, args=('udp', '0.0.0.0', port, 3))
+        tcp_server_thread = threading.Thread(target=start_server, args=('tcp', '0.0.0.0', port))
+        udp_server_thread = threading.Thread(target=start_server, args=('udp', '0.0.0.0', port))
 
         tcp_thread = threading.Thread(target=is_port_open, args=('tcp', port))
         udp_thread = threading.Thread(target=is_port_open, args=('udp', port))
