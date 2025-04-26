@@ -3,18 +3,12 @@ import logging
 from app.port_knocker import MainWindow
 from app.port_utils import trigger_firewall_prompt
 from config.logging_config import setup_logging
-from config.config import DebugConfig, ReleaseConfig
 from resources.resources import qInitResources, qCleanupResources
 from PySide6 import QtWidgets
 
 
 if __name__ == "__main__":
-    config = DebugConfig if os.getenv("DEBUG") == "True" else ReleaseConfig()
-
-    if config.DEBUG:
-        print("Running in debug mode")
-
-    setup_logging(config)
+    setup_logging("DEBUG")
 
     logging.info("Loading resources.")
     qInitResources()
